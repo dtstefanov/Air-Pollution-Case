@@ -1,6 +1,6 @@
 rm(list=ls())
 # Step 1: Import data on citizen science air quality measurements and topography data for Sofia. ----
-setwd("./") # put the path to your working directory here 
+setwd("") # put the path to your working directory here 
 getwd() #check WD
 
 # installing library to unzip the "gz" files
@@ -74,3 +74,29 @@ for (i in 1:length(names(sofia_topo))){
 data_class
 # all features are of class "numeric" - that's good
 rm(data_class, i)
+
+# Step 3 ----
+
+# Now let's calculate the number of unique stations for 2017 and 2018
+unique_2017<-unique(data_bg_2017$geohash)
+length(unique_2017)
+# 383 unique stations in 2017
+
+unique_2018<-unique(data_bg_2018$geohash)
+length(unique_2018)
+# 1254 unique stations in 2018
+
+
+# It is not reasonable to make predictions for stations that were not observed in 2018, 
+# so we'll find and remove data for stations only observed in 2017
+
+only_in_2017<-setdiff(data_bg_2017$geohash, data_bg_2018$geohash)
+length(only_in_2017)
+# 11 stations have data only for 2017, let's take them out of the dataset
+
+data_bg_2017[-which(data_bg_2017$geohash==only_in_2017[1]),]
+data_bg_2017_new<-data_bg_2017[-which(data_bg_2017$geohash==only_in_2017),] #THIS SUBSETTING DID NOT WORK PROPERLY!!!
+unique_2017_new<-length(unique(data_bg_2017_new$geohash))
+head(unique_2017_new)
+length(unique_2017_new)
+
