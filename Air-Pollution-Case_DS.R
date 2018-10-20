@@ -114,3 +114,54 @@ length(unique(data_bg_2017_new$geohash))
 data_bg_full <- rbind(data_bg_2017_new, data_bg_2018)
 
 # Step 4: Summarize availability of merged data by stations ----
+
+TBD
+
+
+# Step 5: Summarize stations on the map ----
+
+summary <- as.data.frame(unique(data_bg_full$geohash))
+colnames(summary)[colnames(summary) == 'unique(data_bg_full$geohash)'] <- 'geohash'
+ 
+if (!require(geohash)) {
+  install.packages("geohash")
+  require(geohash)
+}
+
+# getting geohashes decoded
+
+geohash_decoded <- as.data.frame(gh_decode(summary$geohash))
+summary_decoded <- data.frame(summary, geohash_decoded)
+
+
+# plotting some maps
+
+if (!require(leaflet)) {
+  install.packages("leaflet")
+  require(leaflet)
+}
+
+# plot all geohashes
+
+  summary_decoded[which(summary_decoded$geohash != ''),]  %>%
+    leaflet() %>%
+    addTiles() %>%
+    addMarkers(clusterOptions = markerClusterOptions())
+  
+# extract Sofia geohashes
+colnames(sofia_topo)[colnames(sofia_topo) == 'Lat'] <- 'lat'
+colnames(sofia_topo)[colnames(sofia_topo) == 'Lon'] <- 'lng'
+sofia_topo$lat <- round(sofia_topo$lat, digits = 3)
+sofia_topo$lng <- round(sofia_topo$lng, digits = 3)
+summary_decoded$lat <- round(summary_decoded$lat, digits = 3)
+summary_decoded$lng <- round(summary_decoded$lng, digits = 3)
+sofia_summary <- summary_decoded[which(summary_decoded$lat < max(sofia_topo$lat) & summary_decoded$lat > min(sofia_topo$lat)& summary_decoded$lng < max(sofia_topo$lng) & summary_decoded$lng > min(sofia_topo$lng) ), ]
+  
+
+# plot geohashes in Sofia only
+  sofia_summary %>%
+    leaflet() %>%
+    addTiles() %>%
+    addCircleMarkers(weight = 0.1, color = "red")
+  
+  
