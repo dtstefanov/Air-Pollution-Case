@@ -1,0 +1,30 @@
+# Step 4: Summarize availability of merged data by stations ----
+library(dplyr)
+
+#Let's check for NAs
+sum(is.na(data_bg_full$geohash)) #[1] 0 There are no NAs
+sum(data_bg_full$geohash == "") # [1] 4 There are 4 empty geohashes
+
+#Clean missing geohashes
+data_bg_clean <- data_bg_full%>%
+  filter(data_bg_full$geohash != "")
+unique_full_set<-unique(data_bg_full$geohash) #1254 unique stations == length of frequency
+ 
+#Group,summarize and filter geohashes
+summary <- data_bg_clean %>%
+  group_by(data_bg_clean$geohash) %>%
+  summarise(
+    n = n())    %>%
+  filter(n > 4)
+summary <- data.frame(observations)
+freq=data.frame(table(data_bg_clean$geohash))
+
+#Let's see where our observations begin and end
+min(data_bg_clean$time) #[1] "2017-09-06 20:00:00 UTC"
+max (data_bg_clean$time) # [1] "2018-08-16 12:00:00 UTC"
+
+#Create new DF with first and last observation and their frequency
+summary$Tmin <- min(data_bg_clean$time)
+summary$Tmax <- max(data_bg_clean$time)
+summary$Obs <- frequency(data_bg_clean)
+summary$Days <- summary$Tmax-summary$Tmax
