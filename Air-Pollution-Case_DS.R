@@ -48,7 +48,7 @@ summary(data_bg_2018)
 
 # now let's check the class of the variables
 names(data_bg_2017)==names(data_bg_2018)
-# colnames of the two "citizen" datasets are the same, so we can work with both of the datasets
+# colnames of the two datasets are the same, so we can work with both of the datasets
 
 data_class<-data.frame()
 for (i in 1:length(names(data_bg_2017))){
@@ -115,13 +115,47 @@ data_bg_full <- rbind(data_bg_2017_new, data_bg_2018)
 
 # Step 4: Summarize availability of merged data by stations ----
 
-TBD
+if (!require(dplyr)) {
+  install.packages("dplyr")
+  require(dplyr)
+}
 
+#Let's check for NAs
+sum(is.na(data_bg_full$geohash)) #[1] 0 There are no NAs
+sum(data_bg_full$geohash == "") # [1] 4 There are 4 empty geohashes
+
+#Clean missing geohashes
+data_bg_clean <- data_bg_full%>%
+  filter(data_bg_full$geohash != "")
+unique_full_set <- data.frame(unique(data_bg_clean$geohash)) #1254 unique stations == length of frequency
+
+# summarize the observations
+freq <- data.frame(table(data_bg_clean$geohash)) 
+
+min <- aggregate(time ~ geohash, data = data_bg_clean, min) #min
+max <- aggregate(time ~ geohash, data = data_bg_clean, max) #max
+
+# merge min and max and prepare for merging to the final summary
+minmax <- merge(min, max, by="geohash")
+
+# building the final summary dataset
+colnames(freq)[colnames(freq) == 'Var1'] <- 'geohash'
+summary <- merge(freq, minmax, by="geohash")
+summary$days <- difftime(summary$time.y, summary$time.x, units = "days")
+
+# do some renaming
+colnames(summary)[colnames(summary) == 'time.x'] <- 'tmin'
+colnames(summary)[colnames(summary) == 'time.y'] <- 'tmax'
+colnames(summary)[colnames(summary) == 'Freq'] <- 'obs'
+
+#filter geohashes > 4
+summary <-  filter(summary,obs > 4)
+
+# check the summary
+head(summary)
 
 # Step 5: Summarize stations on the map ----
 
-summary <- as.data.frame(unique(data_bg_full$geohash))
-colnames(summary)[colnames(summary) == 'unique(data_bg_full$geohash)'] <- 'geohash'
  
 if (!require(geohash)) {
   install.packages("geohash")
@@ -141,14 +175,16 @@ if (!require(leaflet)) {
   require(leaflet)
 }
 
-# plot all geohashes
+# plot all stations on the map
 
-  summary_decoded[which(summary_decoded$geohash != ''),]  %>%
+  summary_decoded %>%
     leaflet() %>%
     addTiles() %>%
     addMarkers(clusterOptions = markerClusterOptions())
-  
-# extract Sofia geohashes
+
+# looks like there are stations outside Sofia
+    
+# extract Sofia stations only
 colnames(sofia_topo)[colnames(sofia_topo) == 'Lat'] <- 'lat'
 colnames(sofia_topo)[colnames(sofia_topo) == 'Lon'] <- 'lng'
 sofia_topo$lat <- round(sofia_topo$lat, digits = 3)
@@ -158,10 +194,12 @@ summary_decoded$lng <- round(summary_decoded$lng, digits = 3)
 sofia_summary <- summary_decoded[which(summary_decoded$lat < max(sofia_topo$lat) & summary_decoded$lat > min(sofia_topo$lat)& summary_decoded$lng < max(sofia_topo$lng) & summary_decoded$lng > min(sofia_topo$lng) ), ]
   
 
-# plot geohashes in Sofia only
+# plot stations in Sofia only
   sofia_summary %>%
     leaflet() %>%
     addTiles() %>%
-    addCircleMarkers(weight = 0.1, color = "red")
-  
+    addCircleMarkers(weight = 0.1, color = "red") %>%
+    addRectangles(lat1 = (min(sofia_summary$lat)-0.01), lng1 = (max(sofia_summary$lng)-0.18), 
+                  lat2 = (min(sofia_summary$lat)+0.13), lng2 = (min(sofia_summary$lng)+0.18),
+                  fillColor = "transparent")
   
