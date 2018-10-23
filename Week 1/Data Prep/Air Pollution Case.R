@@ -1,5 +1,5 @@
 # Step 1: Import data on citizen science air quality measurements and topography data for Sofia ----
-setwd("/Users/kiril/Documents/Sofia University/Monthly Challenge/data") # put the path to your working directory here 
+setwd("") # put the path to your working directory here 
 getwd() #check WD
 
 # installing library to unzip the "gz" files
