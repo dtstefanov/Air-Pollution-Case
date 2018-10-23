@@ -1,3 +1,5 @@
-# Data Science Society
-## Monthly challenge
-### Week 1
+### Team kiwi
+
+## Data Science Society
+# Monthly challenge
+# Week 1
