@@ -1,4 +1,4 @@
-### Team kiwi
+### Kiwi Team
 
 # Data Science Society
 ## Monthly challenge
