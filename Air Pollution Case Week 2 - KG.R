@@ -148,8 +148,9 @@ colnames(summary)[colnames(summary) == 'time.x'] <- 'tmin'
 colnames(summary)[colnames(summary) == 'time.y'] <- 'tmax'
 colnames(summary)[colnames(summary) == 'Freq'] <- 'obs'
 
-#filter geohashes > 4
-summary <-  filter(summary,obs > 4)
+#filter geohashes with observations over 10 and results for more than 7 days
+summary <-  filter(summary,obs > 10)
+summary <-  filter(summary,days > 7)
 
 # check the summary
 head(summary)
@@ -207,6 +208,9 @@ sofia_summary %>%
 data_bg_final <- subset(data_bg_clean, (data_bg_clean$geohash %in% sofia_summary$geohash))
 data_bg_final <- data.frame(data_bg_final, as.data.frame(gh_decode(data_bg_final$geohash)))
 
+#It's important to keep our environment clean:
+rm(data_bg_full, data_class, freq, data_class_topo, data_bg_2017_new, max, min, minmax, only_in_2017, unique_2017, unique_2018, unique_full_set)
+
 
 # Week 2 ----
 
@@ -250,8 +254,8 @@ if (!require(geosphere)) {
 }
 
 # checking dimensions of the data_bg_final dataset
-length(data_bg_final$geohash) # [1] 1744072
-length(unique(data_bg_final$geohash)) # [1] 566
+length(data_bg_final$geohash) # [1] 1742668
+length(unique(data_bg_final$geohash)) # [1] 549
 
 # subset to unique stations and only three columns
 cluster_test<-data_bg_final[!duplicated(cluster_test$geohash),c("geohash", "lat", "lng")]
