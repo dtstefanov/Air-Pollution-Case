@@ -332,7 +332,7 @@ plot(err) #Most errors come from pressure
 
 #And clean our geo units from inconsistencies
 clust_summary <-  filter(clust_summary, temp.min > -50, temp.max < 80,
-press.max < 0, hum.min >= 0, hum.max >= 0)
+press.max > 0, hum.min >= 0, hum.max >= 0)
 
 #See the sample quantiles corresponding to the given probabilities:
 quantile(clust_summary$temp.min, probs=seq(0, 1, 0.25), names=TRUE, na.rm=FALSE)
