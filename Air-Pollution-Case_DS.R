@@ -488,9 +488,9 @@ save(list=ls(),file="Kiwi week 2")
 # OFFICIAL STATIONS
 #Import EU Data for 2017 & 2018 only in a list
 # Set WD to the "EEA Data" folder
-setwd("C:\\Users\\O38648\\Box Sync\\R Scripts\\University\\Air Pollution Case\\EEA Data")
-eu17=list.files(path="C:\\Users\\O38648\\Box Sync\\R Scripts\\University\\Air Pollution Case\\EEA Data", pattern = "2017_timeseries.csv")
-eu18=list.files(path="C:\\Users\\O38648\\Box Sync\\R Scripts\\University\\Air Pollution Case\\EEA Data", pattern = "2018_timeseries.csv")
+setwd("C:\\Users\\kgenov\\Documents\\Trainings\\Sofia University\\Monthly Challenge - October\\EEA Data")
+eu17=list.files(path="C:\\Users\\kgenov\\Documents\\Trainings\\Sofia University\\Monthly Challenge - October\\EEA Data", pattern = "2017_timeseries.csv")
+eu18=list.files(path="C:\\Users\\kgenov\\Documents\\Trainings\\Sofia University\\Monthly Challenge - October\\EEA Data", pattern = "2018_timeseries.csv")
 eu<-c(eu17,eu18)
 rm(eu17, eu18)
 eu
@@ -504,7 +504,7 @@ for (i in 1:length(eu)){
   names(data_eu)[i]=eu[i]
 }
 rm(eu,i)
-setwd("C:\\Users\\O38648\\Box Sync\\R Scripts\\University\\Air Pollution Case")
+setwd("C:\\Users\\kgenov\\Documents\\Trainings\\Sofia University\\Monthly Challenge - October")
 #Check the class 
 sapply(data_eu[[1]], class) #We need to fix the class of  DatetimeBegin, DatetimeEnd, Validity and Verification
 
@@ -550,7 +550,7 @@ sapply(df_eu, function(x) sum(is.na(x)))
 # This is great! The only missing values in this data frame are in the "Sample" column, which won't be part of our analysis
 
 # Loading meta info about the official stations
-setwd("C:\\Users\\O38648\\Box Sync\\R Scripts\\University\\Air Pollution Case")
+setwd("C:\\Users\\kgenov\\Documents\\Trainings\\Sofia University\\Monthly Challenge - October")
 if (!require(readxl)) {
   install.packages("readxl")
   require(readxl)
@@ -796,10 +796,12 @@ z4<-plyr::join(z4, z_unique[,c("pnt","cluster")], by="pnt", type = "left", match
 cluster_list<-list()
 # The function below is slow: using system.time for the loop below (around 107 sec. on a Intel i5-7200U CPU 2.50 GHz 2.70GHz)!!!!!!!
 # We'll perform this operation using a modified version of the for loop, that we used in week 2
+geo_units<-unique(z4$pnt)
 
-for (i in 1:length(cluster_units)){
+
+for (i in 1:length(geo_units)){
   # Create a temporary data frame with the data for each cluster of geo units
-  cluster_temp<-z4[z4$cluster==cluster_units[i],]
+  cluster_temp<-z4[z4$pnt==geo_units[i],]
   cluster_temp<-cluster_temp[order(cluster_temp$time),]
   
   
@@ -847,25 +849,25 @@ for (i in 1:length(cluster_units)){
   # now let's add center of the cluster and cluster number
   join_temp$lat<-rep(mean(cluster_temp$lat), length(join_temp$time))
   join_temp$lng<-rep(mean(cluster_temp$lng), length(join_temp$time))
-  join_temp$clust_no<-rep(cluster_units[i], length(join_temp$time))
+  join_temp$clust_no<-rep(geo_units[i], length(join_temp$time))
   
   # Save the result as a data frame in the list with the appropriate name (e.g. cluster 1's data frame is called "cluster_1")
-  cluster_list[[i]]<-assign (paste0("cluster_",cluster_units[i]),
+  cluster_list[[i]]<-assign (paste0("cluster_",geo_units[i]),
                              data.frame(join_temp))
   
-  names(cluster_list)[i]<-paste0("cluster_",cluster_units[i])
+  names(cluster_list)[i]<-paste0("cluster_",geo_units[i])
   # Clean environment from temporary files created within this loop
-  rm(list=paste0("cluster_",cluster_units[i]), 
+  rm(list=paste0("cluster_",geo_units[i]), 
      cluster_temp, P1_temp, P2_temp, temperature_temp, 
      humidity_temp, pressure_temp, join_temp)
   
 }
 
-# Now we have a list of 5 clusters, containing average P1, P2, humidity, temperature, pressure of all geo units in it,
+# Now we have a list of 113 clusters, containing average P1, P2, humidity, temperature, pressure of all geo units in it,
 # also the topo center of the cluster and its respective number
 
 
-#let's check once again the min and max dates that we have for the official stations and the clusters 
+#THIS SHOULD BE DONE FOR ALL 113 CLUSTERS let's check once again the min and max dates that we have for the official stations and the clusters 
 check_dates_clusters<-data.frame("min"=c(min(cluster_list[[1]]$time),
                                          min(cluster_list[[2]]$time),
                                          min(cluster_list[[3]]$time),
