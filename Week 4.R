@@ -1107,6 +1107,37 @@ for (i in 1:length(cluster_list)){
   colnames(na_count)[i] <- paste0("perc_NAs_", names(cluster_list[i]))
 }
 
+dim(na_count)
+
+# Rules for the NA threshold
+# let's set threshold at:
+na_threshold<-0.2
+
+# for now we create a second cluster list
+cluster_list_ver2<-cluster_list
+dim(na_count) #[1]  20 113
+
+# First we're going to delete all geo units, for which we have more than 80% missing values 
+# that is (1 - na_threshold = 1 - 0.2 = 0.8)
+remove_clusters<-vector()
+for (i in 1:length(cluster_list_ver2)){
+  if (na_count[rownames(na_count)=="P1",i] > na_threshold){
+    remove_clusters<-c(remove_clusters, i)
+  }
+}
+length(remove_clusters)
+
+cluster_list_ver2[remove_clusters]<-NULL
+length(cluster_list_test) # [1] 75
+# so, 38 clusters were removed, because their P1 variable have more than 80% missing values
+
+# let's also clean the na_count dataframe from these clusters
+# for now we keep the original dataframe
+na_count_ver2<-na_count[-remove_clusters]
+dim(na_count_ver2) # [1] 20 75
+
+
+
 ###### UP TO HERE
 na_count <- na_count[,!(na_count[1,]=='NaN')]
 head(na_count)
