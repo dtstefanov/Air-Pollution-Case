@@ -1024,16 +1024,90 @@ save(list=ls(),file="Kiwi week 3")
 setwd("/Users/kiril/Documents/Sofia University/Monthly Challenge/data")
 load("Kiwi week 3")
 
+### SATURDAY, 17TH NOVEMBER 2018
+# Kiril: I think working on the list for each cluster would be a better option than dataframe containing all info
+# or at least I can't make it work with the dataframe :)))
+
+# Adding the official average information for each cluster in the cluster_list
+head(official_avg)
+official_avg_by_hours<-official_avg
+head(official_avg_by_hours)
+names(official_avg_by_hours)
+# let's make it time series data for each hour:
+# rename the date column to comply with the previous information
+colnames(official_avg_by_hours)[which(names(official_avg_by_hours) == "date")] <- "time"
+# make it POXIT class; first, add hours, minutes, seconds
+official_avg_by_hours$time<-paste(official_avg_by_hours$time,
+                                  rep("00:00:00",length(official_avg_by_hours$time)))
+# use the ymd_hms function
+if (!require(lubridate)) {
+  install.packages("lubridate")
+  require(lubridate)
+}
+
+official_avg_by_hours$time<-ymd_hms(official_avg_by_hours$time,
+                                    tz="Europe/Athens") # warning message: 1 failed to parse
+# Check for NAs
+which(is.na(official_avg_by_hours$time)) #274
+official_avg_by_hours[270:280,]
+
+# hehehe, there's a date 31st of September 2017
+# we directly remove it, since there's no explanation in the readme file,
+# no questions in the forums, no info in Boryana's file, and most importantly: no time :)
+official_avg_by_hours<-official_avg_by_hours[-which(is.na(official_avg_by_hours$time)),]
+
+# Now fill it in for each hour - we will use the average daily measurements for each hour within the day
+
+if (!require(tidyr)) {
+  install.packages("tidyr")
+  require(tidyr)
+}
+
+official_avg_by_hours<-official_avg_by_hours %>% 
+  complete (time = seq(min(official_avg_by_hours$time), max(official_avg_by_hours$time), by="hour"))
+official_avg_by_hours<-as.data.frame(official_avg_by_hours)
+
+# Let's see how many NAs we have now
+sum(is.na(official_avg_by_hours)) # [1] 86130
+
+# Very cool function from the tidyr package for filling in missing data
+official_avg_by_hours<-fill(official_avg_by_hours,
+                            names(official_avg_by_hours)) # second argument is names, because the functions directly calls the columnnames from the dataset
+sum(is.na(official_avg_by_hours)) # [1] 0
+
+
+# Now let's add this to the data for each geo unit in the cluster list
+# just to check:
+dim(cluster_list[[1]]) # [1] 8461   14
+# alright, now let's add it to each cluster:
+
+if (!require(plyr)) {
+  install.packages("plyr")
+  require(plyr)
+}
+
+for (i in 1:length(cluster_list)){
+  cluster_list[[i]] <- join_all(list(cluster_list[[i]], official_avg_by_hours), by = "time")
+}
+# check again
+dim(cluster_list[[1]]) # [1] 8461   20
+head(cluster_list[[1]])
+# a-w-e-s-o-m-e, moving on
+
+# Denis' code for NAs, revisited
+# now it's based on each object in cluster_list, rather than the big dataframe
 # calc the NAs in the dataset
 
-na_count <- data.frame(names(cluster_df))
-row.names(na_count) <- na_count$names.cluster_df
+na_count <- data.frame(names(cluster_list[[1]]))
+row.names(na_count)<-names(cluster_list[[1]])
 
-for (i in 1:max(cluster_df$clust_no, na.rm = TRUE)){
-  na_count[i] <- as.data.frame(round((colSums(is.na(cluster_df[which(cluster_df$clust_no == i),]))/(lengths(cluster_df[which(cluster_df$clust_no == i),])))*100, digits = 2))
-  colnames(na_count)[i] <- paste0("perc_NAs_clust_", i)
+for (i in 1:length(cluster_list)){
+  na_count[i] <- as.data.frame(round(colSums(is.na(cluster_list[[i]]))/lengths(cluster_list[[i]]),
+                                     digits=2))
+  colnames(na_count)[i] <- paste0("perc_NAs_", names(cluster_list[i]))
 }
-head(cluster_list[[1]])
+
+###### UP TO HERE
 na_count <- na_count[,!(na_count[1,]=='NaN')]
 head(na_count)
 # after omiting the NAs the dataset's size significantly dropped (from 786k to 1k)
@@ -1054,45 +1128,3 @@ cluster_df$P1 <- na.interpolation(cluster_df$P1, option = "linear")
 plot(cluster_df$time, cluster_df$P1, type="l")
 
 save(list=ls(),file="Kiwi week 4")
-
-### SATURDAY, 17TH NOVEMBER 2018
-# Kiril: I think working on the list for each cluster would be a better option than dataframe containing all info
-# or at least I can't make it work with the dataframe :)))
-
-# Adding the official average information for each cluster in the cluster_list
-head(official_avg)
-official_avg_by_hours<-official_avg
-head(official_avg_by_hours)
-names(official_avg_by_hours)
-#let's make it for each hour:
-colnames(official_avg_by_hours)[which(names(official_avg_by_hours) == "official.date")] <- "time"
-official_avg_by_hours$time<-paste(official_avg_by_hours$time, rep("00:00:00",length(official_avg_by_hours$time)))
-official_avg_by_hours$time<-ymd_hms(official_avg_by_hours$time, tz="Europe/Athens") # warning message: 1 failed to parse
-which(is.na(official_avg_by_hours$time)) #274
-official_avg_by_hours[270:280,]
-# hehehe, there's a date 31st of September
-# we directly remove it, there's no explanation in the readme file, no questions in the forums, no info in Boryana's file, and most importantly: no time :)
-official_avg_by_hours<-official_avg_by_hours[-which(is.na(official_avg_by_hours$time)),]
-library(tidyr)
-official_avg_by_hours<-official_avg_by_hours %>% 
-  complete (time = seq(min(official_avg_by_hours$time), max(official_avg_by_hours$time), by="hour"))
-official_avg_by_hours<-as.data.frame(official_avg_by_hours)
-
-if (!require(imputeTS)) {
-  install.packages("imputeTS")
-  require(imputeTS)
-}
-sum(is.na(official_avg_by_hours)) # [1] 86130
-# Very cool function from the tidyr package for filling in missing data
-official_avg_by_hours<-fill(official_avg_by_hours,names(official_avg_by_hours))
-sum(is.na(official_avg_by_hours)) # [1] 0
-
-# just to check:
-dim(cluster_list[[1]]) # [1] 8461   14
-# alright, now let's add it to each cluster:
-for (i in 1:length(cluster_list)){
-  cluster_list[[i]] <- join_all(list(cluster_list[[i]], official_avg_by_hours), by = "time")
-}
-# check again
-dim(cluster_list[[1]]) # [1] 8461   20
-head(cluster_list[[1]])
