@@ -1294,8 +1294,22 @@ dim(test_list[[1]]) # [1] 1081    3
 
 # ARIMA
 
+if (!require(forecast)) {
+  install.packages("forecast")
+  require(forecast)
+}
 
+arima_list<-list()
 
+# THIS TAKES SOME TIME!!!!!!!!!!!
+for (i in 1:length(train_list)){
+  arima_list[[i]]<-arima(x = train_list[[i]]$P1,
+                         order=arimaorder(auto.arima(train_list[[i]]$P1)),
+                         xreg = train_list[[i]][,3:length(colnames(train_list[[i]]))])
+}
+names(arima_list)<-names(train_list)
+
+# ACCURACY OF THE MODELS ???
 
 
 
