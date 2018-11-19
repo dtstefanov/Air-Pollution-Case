@@ -1021,7 +1021,7 @@ save(list=ls(),file="Kiwi week 3")
 # Week 4: ----
 # Step 1: Perform exploratory analysis on the statistical characteristics of the response variable (i.e. the adjusted PM10 concentration) for each geo-unit ----
 # loading environment from provious weeks
-setwd("C:\\Users\\kgenov\\Documents\\Trainings\\Sofia University\\Monthly Challenge - October")
+setwd("/Users/kiril/Documents/Sofia University/Monthly Challenge/data")
 load("Kiwi week 3")
 
 ### SATURDAY, 17TH NOVEMBER 2018
@@ -1165,7 +1165,7 @@ na_vals_in_clusters<-vector()
 for (i in 1:length(cluster_list_ver2)){
   na_vals_in_clusters<-c(na_vals_in_clusters, 
                          sum(is.na(cluster_list_ver2[[i]])))
-  }
+}
 sum(na_vals_in_clusters) # [1] 976398
 
 # Now the interpolation itself: as in previous examples, we'll use the linear method
@@ -1224,7 +1224,7 @@ for (i in 1:length(corr_list)){
 }
 
 # What we have here, the threshold_list, is a list of vectors, containing the column numbers of
-# the variables that have a correlation of more than the correlation_threshold for each geo unit
+# the variables that have a correlation value more than the correlation_threshold for each geo unit
 
 # now we have to subset the cluster_list_ver2
 # just in case, we'll create a cluster_list_ver3
@@ -1252,14 +1252,6 @@ save(cluster_list_ver3, file="cluster_list_ver3")
 rm(list=ls())
 load("cluster_list_ver3")
 
-# MAKE THE RESPONSE VARIABLE A FACTOR ONE
-# According to the instructions we have to predict whether the PM10 value will be more or equal to 50 mg in the next day
-
-for (i in 1:length(cluster_list_ver3)){
-  cluster_list_ver3[[i]]$P1<-cluster_list_ver3[[i]]$P1>=50
-  cluster_list_ver3[[i]]$P1<-as.factor(cluster_list_ver3[[i]]$P1)
-}
-rm(i)
 
 # DIVIDE DATASET INTO TRAINING AND TEST
 
@@ -1273,6 +1265,7 @@ for (i in 1:length(cluster_list_ver3)){
 }
 names(train_list)<-names(cluster_list_ver3)
 names(test_list)<-names(cluster_list_ver3)
+rm(i)
 
 # For testing purposes, we define all values after 01 st august 2018
 if (!require(lubridate)) {
@@ -1303,14 +1296,29 @@ arima_list<-list()
 
 # THIS TAKES SOME TIME!!!!!!!!!!!
 for (i in 1:length(train_list)){
-  arima_list[[i]]<-arima(x = train_list[[i]]$P1,
-                         order=arimaorder(auto.arima(train_list[[i]]$P1)),
-                         xreg = train_list[[i]][,3:length(colnames(train_list[[i]]))])
+  arima_list[[i]]<-arima(x = train_list[[i]]$P1, # ARIMA
+                         order=arimaorder(auto.arima(train_list[[i]]$P1)), # ORDER - for each geo unit
+                         xreg = train_list[[i]][,3:length(colnames(train_list[[i]]))]) # external variables
 }
 names(arima_list)<-names(train_list)
 
-# ACCURACY OF THE MODELS ???
+# ACCURACY OF THE MODELS - TBD
 
+
+
+
+
+# Also TBD - transforming response variable for the classification prediction algorithm
+# MAKE THE RESPONSE VARIABLE A FACTOR ONE
+# !!!!!!!!!!!!!!!!!!!! I SKIPPED THIS!!!!! BECAUSE: otherwise the ARIMA model has to predict boolean value
+# we will bring it back later
+# According to the instructions we have to predict whether the PM10 value will be more or equal to 50 mg in the next day
+
+#for (i in 1:length(cluster_list_ver3)){
+#  cluster_list_ver3[[i]]$P1<-cluster_list_ver3[[i]]$P1>=50
+#  cluster_list_ver3[[i]]$P1<-as.factor(cluster_list_ver3[[i]]$P1)
+#}
+#rm(i)
 
 
 ###### UP TO HERE - that's Denis' code
