@@ -1,9 +1,9 @@
 # Week 1: ----
 # put the path to your working directory here:
-wd<-"/Users/kiril/Documents/Sofia University/Monthly Challenge/data"
+rm(list=ls())
+wd<-"C:\\Users\\kgenov\\Documents\\Trainings\\Sofia University\\Monthly Challenge - October"
 
 # Step 1: Import data on citizen science air quality measurements and topography data for Sofia ----
-rm(list=ls())
 setwd(wd) 
 getwd() #check WD
 
@@ -491,15 +491,15 @@ save(list=ls(),file="Kiwi week 2")
 # OFFICIAL STATIONS
 #Import EU Data for 2017 & 2018 only in a list
 # Set WD to the "EEA Data" folder
-setwd("/Users/kiril/Documents/Sofia University/Monthly Challenge/data/EEA Data")
-eu17=list.files(path="/Users/kiril/Documents/Sofia University/Monthly Challenge/data/EEA Data", pattern = "2017_timeseries.csv")
-eu18=list.files(path="/Users/kiril/Documents/Sofia University/Monthly Challenge/data/EEA Data", pattern = "2018_timeseries.csv")
+setwd("C:\\Users\\kgenov\\Documents\\Trainings\\Sofia University\\Monthly Challenge - October")
+eu17=list.files(path="C:\\Users\\kgenov\\Documents\\Trainings\\Sofia University\\Monthly Challenge - October\\EEA Data", pattern = "2017_timeseries.csv")
+eu18=list.files(path="C:\\Users\\kgenov\\Documents\\Trainings\\Sofia University\\Monthly Challenge - October\\EEA Data", pattern = "2018_timeseries.csv")
 eu<-c(eu17,eu18)
 rm(eu17, eu18)
 eu
 
-data_eu=lapply(eu,read.csv,na.string=c("","NA"," "), stringsAsFactors=F, fileEncoding="UTF-16LE")
-#data_eu<-readRDS("/Users/kiril/Documents/Sofia University/Monthly Challenge/data/data_eu.RDS") # that was in case of troubles with encoding
+#data_eu=lapply(eu,read.csv,na.string=c("","NA"," "), stringsAsFactors=F, fileEncoding="UTF-16LE")
+data_eu<-readRDS("C:\\Users\\kgenov\\Documents\\Trainings\\Sofia University\\Monthly Challenge - October\\data_eu.RDS") # that was in case of troubles with encoding
 
 for (i in 1:length(eu)){
   eu[i]=gsub("BG_5_","st", eu[i])
@@ -507,7 +507,7 @@ for (i in 1:length(eu)){
   names(data_eu)[i]=eu[i]
 }
 rm(eu,i)
-setwd("/Users/kiril/Documents/Sofia University/Monthly Challenge")
+setwd("C:\\Users\\kgenov\\Documents\\Trainings\\Sofia University\\Monthly Challenge - October\\")
 #Check the class 
 sapply(data_eu[[1]], class) #We need to fix the class of  DatetimeBegin, DatetimeEnd, Validity and Verification
 
@@ -553,7 +553,7 @@ sapply(df_eu, function(x) sum(is.na(x)))
 # This is great! The only missing values in this data frame are in the "Sample" column, which won't be part of our analysis
 
 # Loading meta info about the official stations
-setwd("/Users/kiril/Documents/Sofia University/Monthly Challenge/data")
+setwd("C:\\Users\\kgenov\\Documents\\Trainings\\Sofia University\\Monthly Challenge - October\\")
 if (!require(readxl)) {
   install.packages("readxl")
   require(readxl)
@@ -1021,7 +1021,7 @@ save(list=ls(),file="Kiwi week 3")
 # Week 4: ----
 # Step 1: Perform exploratory analysis on the statistical characteristics of the response variable (i.e. the adjusted PM10 concentration) for each geo-unit ----
 # loading environment from provious weeks
-setwd("/Users/kiril/Documents/Sofia University/Monthly Challenge/data")
+setwd("C:\\Users\\kgenov\\Documents\\Trainings\\Sofia University\\Monthly Challenge - October")
 load("Kiwi week 3")
 
 ### SATURDAY, 17TH NOVEMBER 2018
@@ -1117,8 +1117,7 @@ na_threshold<-0.2
 cluster_list_ver2<-cluster_list
 dim(na_count) #[1]  20 113
 
-# First we're going to delete all geo units, for which we have more than 80% missing values 
-# that is (1 - na_threshold = 1 - 0.2 = 0.8)
+# First we're going to delete all geo units, for which we have more than 20% missing values 
 remove_clusters<-vector()
 for (i in 1:length(cluster_list_ver2)){
   if (na_count[rownames(na_count)=="P1",i] > na_threshold){
@@ -1128,7 +1127,7 @@ for (i in 1:length(cluster_list_ver2)){
 length(remove_clusters)
 
 cluster_list_ver2[remove_clusters]<-NULL
-length(cluster_list_test) # [1] 75
+length(cluster_list_ver2) # [1] 75
 # so, 38 clusters were removed, because their P1 variable have more than 80% missing values
 
 # let's also clean the na_count dataframe from these clusters
@@ -1137,8 +1136,170 @@ na_count_ver2<-na_count[-remove_clusters]
 dim(na_count_ver2) # [1] 20 75
 
 
+colnames(cluster_list_ver2[[1]])==rownames(na_count_ver2)
+# the first two columns in the cluster_list_ver2 are time and P1 - our response variable
+# the same applies for the first two rows in na_count_ver2
+# therefore in the following loop we won't use them, because they are needed for our model
+# moreover, we have already removed clusters with NA values more than the na_threshold above
 
-###### UP TO HERE
+# this loop removes all columns with na values above the threshold for each geo unit:
+
+remove_variables<-vector()
+for (i in 1:length(cluster_list_ver2)){
+  for (j in 3:length(rownames(na_count_ver2))){
+    if (na_count_ver2[j,i] > na_threshold){
+      remove_variables<-c(remove_variables, j)
+    }
+  }
+  cluster_list_ver2[[i]][remove_variables]<-NULL
+  remove_variables<-vector()
+}
+rm(i,j,remove_variables)
+
+# the result from this action: we now have a different amount of variables for each geo unit based on the NA values
+# from now on, everything we perform will apply for each geo unit seperately
+
+# INTERPOLATION OF THE MISSING VALUES
+# First, let's create a function to check the value of the missing values
+na_vals_in_clusters<-vector()
+for (i in 1:length(cluster_list_ver2)){
+  na_vals_in_clusters<-c(na_vals_in_clusters, 
+                         sum(is.na(cluster_list_ver2[[i]])))
+  }
+sum(na_vals_in_clusters) # [1] 976398
+
+# Now the interpolation itself: as in previous examples, we'll use the linear method
+if (!require(imputeTS)) {
+  install.packages("imputeTS")
+  require(imputeTS)
+}
+
+for (i in 1:length(cluster_list_ver2)){
+  for (j in 1:length(colnames(cluster_list_ver2[[i]]))){
+    cluster_list_ver2[[i]][j] <- na.interpolation(cluster_list_ver2[[i]][j], option = "linear")
+  }
+}
+
+# Let's check again the number of missing values:
+na_vals_in_clusters<-vector()
+for (i in 1:length(cluster_list_ver2)){
+  na_vals_in_clusters<-c(na_vals_in_clusters, 
+                         sum(is.na(cluster_list_ver2[[i]])))
+}
+sum(na_vals_in_clusters) # [1] 0
+# Okay, we can move on to the next step
+
+# CORRELATION BETWEEN RESPONSE VARIABLE AND THE REST
+
+corr_list<-list()
+
+options(warn=-1) # turn off warning messages, because of lng and lat - they have a stdev 0
+
+for (i in 1:length(cluster_list_ver2)){
+  corr_list[[i]]<-data.frame()
+  corr_list[[i]][1,1]<-names(cluster_list_ver2[1])
+  for (j in 2:length(colnames(cluster_list_ver2[[i]]))){
+    corr_list[[i]][1,j] <- as.numeric(cor(cluster_list_ver2[[i]][2], cluster_list_ver2[[i]][j]))
+  }
+  names(corr_list[[1]])<-c("cluster", names(cluster_list_ver2[[1]])[2:length(names(cluster_list_ver2[[1]]))])
+}
+
+options(warn=1) # bring back warning messages
+
+correlation_threshold<-0.75
+
+threshold_list<-list()
+
+
+for (i in 1:length(corr_list)){
+  threshold_list[[i]]<-vector()
+  for (j in 3:length(colnames(corr_list[[i]]))){
+    if (is.na(corr_list[[i]][j]) == TRUE){
+      corr_list[[i]][j]<-0
+    }
+    if (corr_list[[i]][j] > correlation_threshold){
+      threshold_list[[i]]<-c(threshold_list[[i]], j)
+    }
+  }
+}
+
+# What we have here, the threshold_list, is a list of vectors, containing the column numbers of
+# the variables that have a correlation of more than the correlation_threshold for each geo unit
+
+# now we have to subset the cluster_list_ver2
+# just in case, we'll create a cluster_list_ver3
+
+cluster_list_ver3<-cluster_list_ver2
+not_enough_cor<-vector()
+
+
+for (i in 1:length(threshold_list)){
+  if (sum(threshold_list[[i]])!=0) {
+    cluster_list_ver3[[i]]<-cluster_list_ver3[[i]][c(1,2,threshold_list[[i]])]
+  } else {
+    not_enough_cor<-c(not_enough_cor,i)
+  }
+}
+
+# These are the clusters that have no correlation of the response variable and the rest of the variables above the correlation_theshold
+names(cluster_list_ver3[not_enough_cor]) # [1] "cluster_72"  "cluster_78"  "cluster_108"
+
+# Let's remove them to have the final cluster list
+cluster_list_ver3<-cluster_list_ver3[-not_enough_cor]
+
+# Clean environment before modelling
+save(cluster_list_ver3, file="cluster_list_ver3")
+rm(list=ls())
+load("cluster_list_ver3")
+
+# MAKE THE RESPONSE VARIABLE A FACTOR ONE
+# According to the instructions we have to predict whether the PM10 value will be more or equal to 50 mg in the next day
+
+for (i in 1:length(cluster_list_ver3)){
+  cluster_list_ver3[[i]]$P1<-cluster_list_ver3[[i]]$P1>=50
+  cluster_list_ver3[[i]]$P1<-as.factor(cluster_list_ver3[[i]]$P1)
+}
+rm(i)
+
+# DIVIDE DATASET INTO TRAINING AND TEST
+
+# First, let's create two lists for training and test data
+train_list<-list()
+test_list<-list()
+
+for (i in 1:length(cluster_list_ver3)){
+  train_list[[i]]<-data.frame()
+  test_list[[i]]<-data.frame()
+}
+names(train_list)<-names(cluster_list_ver3)
+names(test_list)<-names(cluster_list_ver3)
+
+# For testing purposes, we define all values after 01 st august 2018
+if (!require(lubridate)) {
+  install.packages("lubridate")
+  require(lubridate)
+}
+
+
+division_date<-ymd_hms("2018-08-01 00:00:00", tz="Europe/Athens")
+
+for (i in 1:length(cluster_list_ver3)){
+  train_list[[i]]<-subset(cluster_list_ver3[[i]], time < division_date)
+  test_list[[i]]<-subset(cluster_list_ver3[[i]], time >= division_date)
+}
+rm(i,division_date)
+# just for verification
+dim(train_list[[1]]) # [1] 9365    3
+dim(test_list[[1]]) # [1] 1081    3
+
+# ARIMA
+
+
+
+
+
+
+###### UP TO HERE - that's Denis' code
 na_count <- na_count[,!(na_count[1,]=='NaN')]
 head(na_count)
 # after omiting the NAs the dataset's size significantly dropped (from 786k to 1k)
