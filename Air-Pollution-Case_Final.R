@@ -1,13 +1,24 @@
-load("Final-Environment")
+# Data Science Society
+# Monthly Challenge - October-November 2018
+# Kiwi Team Solution
+
+# The code to the solution of the Kiwi Team is presented below.
+# All code is finally run on:
+# R version 3.5.1 (2018-07-02) -- "Feather Spray"
+# RStudio Version 1.1.456
+
+
 
 # Week 1: ----
-# put the path to your working directory here:
 rm(list=ls())
-wd<-""
+
+# put the path to your working directory instead of "..." here:
+wd<-"..."
 
 # Step 1: Import data on citizen science air quality measurements and topography data for Sofia ----
 setwd(wd) 
 getwd() #check WD
+
 
 # installing library to unzip the "gz" files
 # install.packages("R.utils") # in case you don't have this package installed
@@ -77,8 +88,8 @@ if (!require(lubridate)) {
 data_bg_2017$time<-ymd_hms(data_bg_2017$time)
 data_bg_2018$time<-ymd_hms(data_bg_2018$time)
 class(data_bg_2017$time); class(data_bg_2018$time)
-# All good - now let's check the topo data
 
+# All good - now let's check the topo data
 head(sofia_topo)
 summary(sofia_topo)
 data_class_topo<-data.frame()
@@ -104,12 +115,10 @@ length(unique_2018)
 
 # It is not reasonable to make predictions for stations that were not observed in 2018, 
 # so we'll find and remove data for stations only observed in 2017
-
 only_in_2017<-setdiff(data_bg_2017$geohash, data_bg_2018$geohash)
 length(only_in_2017)
 # 11 stations have data only for 2017, let's take them out of the dataset
 only_in_2017 <- as.data.frame(only_in_2017)
-
 data_bg_2017_new <- subset(data_bg_2017, !(data_bg_2017$geohash %in% only_in_2017$only_in_2017))
 
 # check the removal
@@ -117,9 +126,8 @@ length(unique(data_bg_2017$geohash))
 length(unique(data_bg_2017_new$geohash))
 
 # binding datasets
-
 data_bg_full <- rbind(data_bg_2017_new, data_bg_2018)
-rm(data_bg_2017_new, unique_2018, data_bg_2017, data_bg_2018)
+rm(data_bg_2017_new, unique_2017, unique_2018, data_bg_2017, data_bg_2018)
 
 # Step 4: Summarize availability of merged data by stations ----
 
@@ -158,7 +166,7 @@ colnames(summary)[colnames(summary) == 'Freq'] <- 'obs'
 # check the summary
 head(summary)
 
-rm(min, max, freq, minmax)
+rm(min, max, freq, minmax, data_bg_full)
 
 # Step 5: Summarize stations on the map ----
 
@@ -193,7 +201,10 @@ summary_decoded %>%
 # extract Sofia stations only
 colnames(sofia_topo)[colnames(sofia_topo) == 'Lat'] <- 'lat'
 colnames(sofia_topo)[colnames(sofia_topo) == 'Lon'] <- 'lng'
-sofia_summary <- summary_decoded[which(summary_decoded$lat < max(sofia_topo$lat) & summary_decoded$lat > min(sofia_topo$lat)& summary_decoded$lng < max(sofia_topo$lng) & summary_decoded$lng > min(sofia_topo$lng) ), ]
+sofia_summary <- summary_decoded[which(summary_decoded$lat < max(sofia_topo$lat)&
+                                         summary_decoded$lat > min(sofia_topo$lat)&
+                                         summary_decoded$lng < max(sofia_topo$lng)&
+                                         summary_decoded$lng > min(sofia_topo$lng) ), ]
 
 
 # plot stations in Sofia only
@@ -217,7 +228,7 @@ summary <-  filter(summary,days > 7) #1216 observations left
 data_bg_final <- subset(data_bg_clean, (data_bg_clean$geohash %in% sofia_summary$geohash))
 data_bg_final <- data.frame(data_bg_final, as.data.frame(gh_decode(data_bg_final$geohash)))
 
-rm(summary_decoded, unique_2017, unique_full_set, only_in_2017)
+rm(summary_decoded, only_in_2017)
 
 # Week 2: ----
 # Step 1: Decide on the final list of geo-units that are subject to predictive analysis ----
@@ -393,7 +404,7 @@ z4$humidity=ifelse(z4$humidity<5,NA,z4$humidity)
 min_temp <- -25
 z4$temperature=ifelse(z4$temperature>40,NA,ifelse(z4$temperature < min_temp,NA, z4$temperature))
 z4$pressure=ifelse(z4$pressure>105113.5,NA,ifelse(z4$pressure<99018,NA, z4$pressure))
-sum(is.na(z4))#[1] 1 928 965
+sum(is.na(z4))#[1] 1830150
 
 rm(prout, E, err, err_new)
 #They look much better now and we can move on
@@ -407,13 +418,13 @@ if (!require(tidyr)) {
 }
 
 # Get the numbers of all geo units (clusters)
-geo_units<-unique(z4$pnt) # z4 FROM STEP 2 IS USED; CHANGE THIS AFTER THE RULES CREATED STEP 3
-length(geo_units) # [1] 116
+geo_units<-unique(z4$pnt) # z4 FROM STEP 2 IS USED;
+length(geo_units) # [1] 113
 
 # Create an empty list object to save the time series data for each cluster
 ts_list<-list()
 library(plyr) 
-# The function below is slow: using system.time for the loop below (around 107 sec. on a Intel i5-7200U CPU 2.50 GHz 2.70GHz)!!!!!!!
+# The function below is slow: using system.time for the loop below (around 107 sec. on a Intel i5-7200U CPU 2.50 GHz 2.70GHz)
 # Since there are 116 clusters, we'll perform this operation using a for loop
 for (i in 1:length(geo_units)){
   # Create a temporary data frame with the data for each geo unit
@@ -485,7 +496,7 @@ for(i in 1:length(ts_list)){
 box<-as.data.frame(box)
 plot(box)
 
-rm(adf,axx,axy,axz,box, dist_mat,filtered, geo_units, geohash_decoded, i,pal, min_temp, stats, ts,summary,data_bg_clean, data_bg_full)
+rm(box, dist_mat, geo_units, geohash_decoded, pal, min_temp, summary, data_bg_clean)
 
 # Week 3: ---------
 # Step 1: Consider the datasets on official air quality measurements------
@@ -493,15 +504,16 @@ rm(adf,axx,axy,axz,box, dist_mat,filtered, geo_units, geohash_decoded, i,pal, mi
 # OFFICIAL STATIONS
 #Import EU Data for 2017 & 2018 only in a list
 # Set WD to the "EEA Data" folder
-setwd("")
-eu17=list.files(path="", pattern = "2017_timeseries.csv")
-eu18=list.files(path="", pattern = "2018_timeseries.csv")
+setwd(paste0(wd,".//EEA Data"))
+getwd()
+eu17=list.files(path="./", pattern = "2017_timeseries.csv")
+eu18=list.files(path="./", pattern = "2018_timeseries.csv")
 eu<-c(eu17,eu18)
 rm(eu17, eu18)
 eu
 
-#data_eu=lapply(eu,read.csv,na.string=c("","NA"," "), stringsAsFactors=F, fileEncoding="UTF-16LE")
-data_eu<-readRDS("") # that was in case of troubles with encoding
+data_eu=lapply(eu,read.csv,na.string=c("","NA"," "), stringsAsFactors=F, fileEncoding="UTF-16LE")
+#data_eu<-readRDS("") # in case of troubles with UTF-16 encoding, please ask the Kiwi team for this file
 
 for (i in 1:length(eu)){
   eu[i]=gsub("BG_5_","st", eu[i])
@@ -509,7 +521,7 @@ for (i in 1:length(eu)){
   names(data_eu)[i]=eu[i]
 }
 rm(eu,i)
-setwd("")
+setwd(wd)
 #Check the class 
 sapply(data_eu[[1]], class) #We need to fix the class of  DatetimeBegin, DatetimeEnd, Validity and Verification
 
@@ -547,7 +559,7 @@ min(df_eu$DatetimeEnd) #[1] "2017-11-28 13:00:00 UTC"
 max(df_eu$DatetimeEnd) #[1] "2018-09-14 21:00:00 UTC"
 
 # There's data fom the end of November 2017. 
-# !!!!!!! N.B.:
+# !!! N.B.:
 # That means that if we want to use this dataset's variables as predictors, we'll have to restrain ourselves in the period November 2017 - August 2018
 
 # Check for missing values
@@ -555,7 +567,7 @@ sapply(df_eu, function(x) sum(is.na(x)))
 # This is great! The only missing values in this data frame are in the "Sample" column, which won't be part of our analysis
 
 # Loading meta info about the official stations
-setwd("")
+
 if (!require(readxl)) {
   install.packages("readxl")
   require(readxl)
@@ -602,7 +614,6 @@ if (!require(imputeTS)) {
   require(imputeTS)
 }
 nadezhda$P1_official<-na.interpolation(nadezhda$P1_official, option = "linear") # SPLINE DID NOT WORK WELL, WE CAN TRY AGAIN
-#!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 # YOU CAN TRY REPLACING THE OPTION "linear" ABOVE WITH "spline" AND RUNNING THE CODE FOR NADEZHDA STATION ALL OVER, TO SEE THE TWO PLOTS
 nadezhda$AirQualityStationEoICode[is.na(nadezhda$AirQualityStationEoICode)]<-"BG0040A"
 sapply(nadezhda, function(x) sum(is.na(x))) # good, 0
@@ -708,7 +719,7 @@ official<-official[official$year==2017|official$year==2018,]
 
 summary(official)
 
-# Let's make it time series per day (for now)
+# Let's make it time series per day
 if (!require(lubridate)) {
   install.packages("lubridate")
   require(lubridate)
@@ -735,9 +746,6 @@ sapply(official, function(x) sum(is.na(x)))
 # Okay, before we move on we've got to make a step back and review our approach to the geo units
 # At the end of week 2 we had 113 clusters of the 568 citizen stations. 
 # Looking forward to the next stages of the project, we'll have to analyze correlation between variables and create a prediction model based on them
-# Considering the large scale of work - 113 different datasets to analyze, we decided to create few clusters to work with
-# The number of clusters we'll create is 5. If we are confident enough working with such a small number of datasets,
-# we can easily go back to the 113 clusters, if of course this would help strenghten the predictive power of our model
 
 # Now let's load again the objects saved from our work during Week 1 and Week 2
 
@@ -748,10 +756,6 @@ z_unique<-subset(z_units, !duplicated(pnt)) # unique cluster numbers and topogra
 # Let's add the topography of the official stations
 official_st_topo<-as.matrix(metadata[,c("Longitude", "Latitude")])
 
-# Using K-means, we create 5 clusters within the geo units list in order to better facilitate our work on the prediction model
-# we also set seed, to ensure reproducibility of the analysis
-set.seed(123)
-z_unique$cluster<-kmeans(x = z_unique[,c("lng","lat")], centers = 5)$cluster
 
 # Three quick plots to get an overview of the clustering process
 
@@ -781,18 +785,9 @@ official_st_topo %>%
   addMarkers()
 
 
-# And that's how our 5 clusters look like - the ones that we created with kmeans() to make the prediction model
 
-pal <- colorFactor("Set1", domain = z_unique$cluster)
-official_st_topo %>%
-  leaflet() %>%
-  addTiles() %>%
-  addCircleMarkers(z_unique$lng, z_unique$lat, color=pal(z_unique$cluster)) %>%
-  addMarkers()
-
-
-# Next, we're going to aggregate the data for each of the 5 clusters using the mean() function for the variables
-# Now let's add the number of the respective cluster (1 to 5) to the data frame with all variables z4
+# Next, we're going to aggregate the data for each of the 113 clusters using the mean() function for the variables
+# Now let's add the number of the respective cluster (1 to 113) to the data frame with all variables z4
 cluster_units<-unique(z_unique$cluster)
 z4<-plyr::join(z4, z_unique[,c("pnt","cluster")], by="pnt", type = "left", match = "first")
 
@@ -871,21 +866,6 @@ for (i in 1:length(geo_units)){
 # also the topo center of the cluster and its respective number
 
 
-#THIS SHOULD BE DONE FOR ALL 113 CLUSTERS let's check once again the min and max dates that we have for the official stations and the clusters 
-check_dates_clusters<-data.frame("min"=c(min(cluster_list[[1]]$time),
-                                         min(cluster_list[[2]]$time),
-                                         min(cluster_list[[3]]$time),
-                                         min(cluster_list[[4]]$time),
-                                         min(cluster_list[[5]]$time)),
-                                 
-                                 "max"=c(max(cluster_list[[1]]$time),
-                                         max(cluster_list[[2]]$time),
-                                         max(cluster_list[[3]]$time),
-                                         max(cluster_list[[4]]$time),
-                                         max(cluster_list[[5]]$time)))
-check_dates_clusters
-# the TS data for all clusters starts on 2017-09-06 20:00:00 and finishes on 2018-08-16 12:00:00
-
 check_dates_stations<-data.frame("min"=c(min(nadezhda$time),
                                          min(hipodruma$time),
                                          min(druzhba$time),
@@ -901,7 +881,7 @@ check_dates_stations<-data.frame("min"=c(min(nadezhda$time),
                                  row.names = c("nadezhda", "hipodruma", "druzhba", "pavlovo", "mladost"))
 
 check_dates_stations
-# we have to think how to approach mladost station data, because it starts in 2018
+# later we have to think how to approach mladost station data, because it starts in 2018
 
 
 
@@ -936,8 +916,7 @@ names(stations_list)<- c("nadezhda",
                          "pavlovo",
                          "mladost")
 
-rm(check_dates_clusters,
-   check_dates_stations,
+rm(check_dates_stations,
    clust_summary,
    data_bg_final,
    data_eu,
@@ -948,7 +927,6 @@ rm(check_dates_clusters,
    z_units,
    i,
    cluster_units,
-   pal,
    nadezhda,
    hipodruma,
    pavlovo,
@@ -972,7 +950,7 @@ colnames(official_avg)[1] <- "date"
 cluster_df <- merge(cluster_df, official_avg, by = "date", all.x = TRUE)
 cluster_df$date <- NULL
 head(cluster_df)
-# save the environment
+# save your R environment here :)
 
 # Step 3: Design and implement a decomposition procedure ----
 
@@ -1022,10 +1000,6 @@ summary(fit)
 # Week 4: ----
 # Step 1: Perform exploratory analysis on the statistical characteristics of the response variable (i.e. the adjusted PM10 concentration) for each geo-unit ----
 
-### SATURDAY, 17TH NOVEMBER 2018
-# Kiril: I think working on the list for each cluster would be a better option than dataframe containing all info
-# or at least I can't make it work with the dataframe :)))
-
 # Adding the official average information for each cluster in the cluster_list
 head(official_avg)
 official_avg_by_hours<-official_avg
@@ -1049,9 +1023,7 @@ official_avg_by_hours$time<-ymd_hms(official_avg_by_hours$time,
 which(is.na(official_avg_by_hours$time)) #274
 official_avg_by_hours[270:280,]
 
-# hehehe, there's a date 31st of September 2017
-# we directly remove it, since there's no explanation in the readme file,
-# no questions in the forums, no info in Boryana's file, and most importantly: no time :)
+# there's a date 31st of September 2017
 official_avg_by_hours<-official_avg_by_hours[-which(is.na(official_avg_by_hours$time)),]
 
 # Now fill it in for each hour - we will use the average daily measurements for each hour within the day
@@ -1092,8 +1064,6 @@ dim(cluster_list[[1]]) # [1] 8461   20
 head(cluster_list[[1]])
 # a-w-e-s-o-m-e, moving on
 
-# Denis' code for NAs, revisited
-# now it's based on each object in cluster_list, rather than the big dataframe
 # calc the NAs in the dataset
 
 na_count <- data.frame(names(cluster_list[[1]]))
@@ -1126,7 +1096,7 @@ length(remove_clusters)
 
 cluster_list_ver2[remove_clusters]<-NULL
 length(cluster_list_ver2) # [1] 75
-# so, 38 clusters were removed, because their P1 variable have more than 80% missing values
+# so, 38 clusters were removed, because their P1 variable (our response variable) have more than 80% missing values
 
 # let's also clean the na_count dataframe from these clusters
 # for now we keep the original dataframe
@@ -1223,6 +1193,7 @@ for (i in 1:length(corr_list)){
 
 # What we have here, the threshold_list, is a list of vectors, containing the column numbers of
 # the variables that have a correlation value more than the correlation_threshold for each geo unit
+# Note: a more advanced approach for feature selection could be to apply a Ridge, or Lasso method for example, or any other technique. Here, we stick to the most basic approach - correlation.
 
 # now we have to subset the cluster_list_ver2
 # just in case, we'll create a cluster_list_ver3
@@ -1245,7 +1216,8 @@ names(cluster_list_ver3[not_enough_cor]) # [1] "cluster_72"  "cluster_78"  "clus
 # Let's remove them to have the final cluster list
 cluster_list_ver3<-cluster_list_ver3[-not_enough_cor]
 
-# Clean environment before modelling
+# Building prediction models ----
+# You can clean all the environment before modelling
 save(cluster_list_ver3, file="cluster_list_ver3")
 rm(list=ls())
 load("cluster_list_ver3")
@@ -1265,7 +1237,7 @@ names(train_list)<-names(cluster_list_ver3)
 names(test_list)<-names(cluster_list_ver3)
 rm(i)
 
-# For testing purposes, we define all values after 01 st august 2018
+# For testing purposes, we would separate all values after 01st august 2018
 if (!require(lubridate)) {
   install.packages("lubridate")
   require(lubridate)
@@ -1280,8 +1252,8 @@ for (i in 1:length(cluster_list_ver3)){
 }
 rm(i,division_date)
 # just for verification
-dim(train_list[[1]]) # [1] 9365    3
-dim(test_list[[1]]) # [1] 1081    3
+dim(train_list[[1]]) # [1] 10422    3
+dim(test_list[[1]]) # [1] 24    3
 
 # Step 2: Build the prediction model ----
 
@@ -1292,7 +1264,11 @@ if (!require(forecast)) {
 
 arima_list<-list()
 
-# THIS TAKES SOME TIME!!!!!!!!!!!
+# Our prediction models for each geo unit would be based on the ARIMA-X model, which is an ARIMA model with external factors.
+# The order of the ARIMA models is defined by the R's built in auto.arima function
+# The external factors for each model are different, based on the feature selection procedure above
+# The result of this procedure would be a list of 113 different models for each geo unit
+# NB: THIS LOOP TAKES SOME TIME TO RUN!!!
 for (i in 1:length(train_list)){
   arima_list[[i]]<-arima(x = train_list[[i]]$P1, # ARIMA
                          order=arimaorder(auto.arima(train_list[[i]]$P1)), # ORDER - for each geo unit
@@ -1300,26 +1276,17 @@ for (i in 1:length(train_list)){
 }
 names(arima_list)<-names(train_list)
 
-# ACCURACY OF THE MODELS - TBD
+# ACCURACY OF THE MODELS
 
-# Also TBD - transforming response variable for the classification prediction algorithm
-# MAKE THE RESPONSE VARIABLE A FACTOR ONE
-# !!!!!!!!!!!!!!!!!!!! I SKIPPED THIS!!!!! BECAUSE: otherwise the ARIMA model has to predict boolean value
-# we will bring it back later
-# According to the instructions we have to predict whether the PM10 value will be more or equal to 50 mg in the next day
-
-#for (i in 1:length(cluster_list_ver3)){
-#  cluster_list_ver3[[i]]$P1<-cluster_list_ver3[[i]]$P1>=50
-#  cluster_list_ver3[[i]]$P1<-as.factor(cluster_list_ver3[[i]]$P1)
-#}
-#rm(i)
 results <- list()
 for (i in 1:length(test_list)){
   
   results[[i]] <- predict(arima_list[[i]], newxreg = test_list[[i]][,3:length(colnames(test_list[[i]]))])
   
 }
+
 # Step 3: Check the accuracy of the model ----
+# The accuracy of each model is calculated based on the average error reached
 comparison <- list()
 for (i in 1:length(test_list)){
   
@@ -1330,6 +1297,27 @@ for (i in 1:length(test_list)){
 z <- as.data.frame(unlist(comparison))
 z$cluster <- names(arima_list)
 
-plot(z$`unlist(comparison)`, z$`unlist(comparison)`, main = "Model Accuracy", xlab = "Cluster No", ylab = "%")
+# As we can see on the graph below, the accuracy for most of the models is close to the real values
+# However, there are some models that did not perform well, predicting results below and above the actual P1 values in the test subset
+plot(z$`unlist(comparison)`, main = "Model Accuracy", xlab = "Cluster No", ylab = "%")
 abline(h=mean(z$`unlist(comparison)`), col = "red")
+
+# Here's a distribution of the accuracy of the models trained
+hist(z$`unlist(comparison)`, breaks = 20, main = "Model Accuracy", xlab = "Accuracy reached", ylab = "%")
+
+# And finally a summary of the results
 summary(z)
+
+# Average accuracy of all models is 95.16%
+
+# Future improvements of this solution could be improvement of the feature selection algrorithm and the ARIMA-X models, so that the order of the ARIMA is calculated manually for each cluster
+# Assuming the data sources can transmit streaming data (through APIs for example), the current model could be upgraded to predict the air pollutions levels in Sofia in real time.
+
+# THANKS!!! :)
+
+# Kiwi team:
+# Veronica Nacheva
+# Maria Yolova
+# Denis Stefanov
+# Kiril Genov
+# Ivo Minchev
